@@ -14,7 +14,7 @@ A Python-based cybersecurity tool designed to analyze the email security posture
 
 ## Installation & Usage
 1. Clone the repository:
-   `git clone https://github.com/yourusername/email-security-analyzer.git`
+   `git clone https://github.com/yasirukodithuwakku/email-security-analyzer.git`
 2. Install dependencies:
    `pip install dnspython`
 3. Run the tool:
