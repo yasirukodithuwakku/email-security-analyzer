@@ -5,8 +5,8 @@ A Python-based cybersecurity tool designed to analyze the email security posture
 
 ## Current Features
 * **SPF (Sender Policy Framework) Checker:** Verifies if the domain has a valid SPF record to prevent unauthorized IP addresses from sending emails on its behalf.
-* *(Upcoming)* DMARC Analysis
-* *(Upcoming)* DKIM Verification
+* **DMARC Analysis:** Checks for DMARC policies that dictate how receiver servers should handle emails that fail SPF or DKIM authentication.
+* **DKIM Verification:** Scans common DNS selectors to find DomainKeys Identified Mail (DKIM) digital signatures, ensuring message integrity and non-repudiation.
 
 ## Prerequisites
 * Python 3.x
