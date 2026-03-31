@@ -59,3 +59,10 @@ header p { color: var(--text-muted); margin-top: 10px; font-size: 1.2rem; }
 .truncate { max-height: 180px; overflow-y: auto; }
 .message { color: var(--text-muted); font-size: 1.1rem; line-height: 1.6; }
 .selector { margin-bottom: 15px; font-size: 1rem; color: #94a3b8; }
+/* PDF Report Styles */
+.report-wrapper { margin-top: 20px; }
+.report-actions { display: flex; justify-content: flex-end; margin-bottom: 20px; }
+.download-btn { display: flex; align-items: center; gap: 8px; background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+.download-btn:hover { background: #059669; }
+.pdf-container { padding: 10px; border-radius: 12px; }
+.report-title { color: var(--text-muted); font-size: 1.2rem; margin-bottom: 20px; text-align: center; border-bottom: 1px solid #334155; padding-bottom: 15px; }
