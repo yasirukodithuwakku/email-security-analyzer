@@ -1,10 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import dns.resolver
+import requests
 
 app = FastAPI()
 
-# React එකෙන් එන Request භාරගන්න CORS අවසරය දීම
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -12,6 +12,26 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+VT_API_KEY = "70239e556a7102acd316d0ec46b2b77feb876b86dea02ed5a3425eed06de170c"
+
+def check_virustotal(domain):
+    url = f"https://www.virustotal.com/api/v3/domains/{domain}"
+    headers = {"x-apikey": VT_API_KEY}
+    
+    try:
+        response = requests.get(url, headers=headers)
+        if response.status_code == 200:
+            stats = response.json()['data']['attributes']['last_analysis_stats']
+            malicious = stats.get('malicious', 0)
+            if malicious > 0:
+                return {"status": "Error", "message": f"DANGER: Flagged as malicious by {malicious} security vendors!"}
+            else:
+                return {"status": "Secure", "message": "Clean domain. No malicious activity found."}
+        return {"status": "Warning", "message": "Domain not found in VirusTotal database."}
+    except Exception as e:
+        return {"status": "Error", "message": str(e)}
 
 def check_spf(domain):
     try:
@@ -50,12 +70,12 @@ def check_dkim(domain):
             continue
     return {"status": "Info", "message": "No standard DKIM records found."}
 
-# React එකෙන් කතා කරන Endpoint එක
 @app.get("/api/analyze/{domain}")
 async def analyze_domain(domain: str):
     return {
         "domain": domain,
         "spf": check_spf(domain),
         "dmarc": check_dmarc(domain),
-        "dkim": check_dkim(domain)
+        "dkim": check_dkim(domain),
+        "virustotal": check_virustotal(domain) 
     }

@@ -27,14 +27,13 @@ function App() {
     }
   }
 
-  
   const downloadPDF = () => {
     const element = document.getElementById('report-content');
     const opt = {
       margin:       0.5,
       filename:     `${domain}-security-report.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, backgroundColor: '#0b1120' }, 
+      html2canvas:  { scale: 2, backgroundColor: '#0b1120' },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
     html2pdf().set(opt).from(element).save();
@@ -79,7 +78,6 @@ function App() {
               </button>
             </div>
 
-            
             <div id="report-content" className="pdf-container">
               <h2 className="report-title">Target Domain: {results.domain}</h2>
               <div className="results-grid">
@@ -132,6 +130,18 @@ function App() {
                     ) : (
                       <p className="message">{results.dkim.message}</p>
                     )}
+                  </div>
+                </div>
+
+                {/* Threat Intelligence Card */}
+                <div className={`card ${results.virustotal.status.toLowerCase()}`}>
+                  <div className="card-header">
+                    {getStatusIcon(results.virustotal.status)}
+                    <h2>Threat Intelligence</h2>
+                  </div>
+                  <div className="card-body">
+                    <span className="badge">{results.virustotal.status}</span>
+                    <p className="message">{results.virustotal.message}</p>
                   </div>
                 </div>
 
