@@ -3,6 +3,13 @@ from fastapi.middleware.cors import CORSMiddleware
 import dns.resolver
 import requests
 import google.generativeai as genai
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+VT_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 app = FastAPI()
 
