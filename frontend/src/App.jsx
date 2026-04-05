@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import axios from 'axios'
-import { Shield, ShieldAlert, ShieldCheck, Search, Loader, Info, Download } from 'lucide-react'
+import { Shield, ShieldAlert, ShieldCheck, Search, Loader, Info, Download, Sparkles } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import './index.css'
 
@@ -18,6 +18,7 @@ function App() {
     setResults(null)
 
     try {
+   
       const response = await axios.get(`http://127.0.0.1:8000/api/analyze/${domain}`)
       setResults(response.data)
     } catch (err) {
@@ -27,6 +28,7 @@ function App() {
     }
   }
 
+  
   const downloadPDF = () => {
     const element = document.getElementById('report-content');
     const opt = {
@@ -39,6 +41,7 @@ function App() {
     html2pdf().set(opt).from(element).save();
   }
 
+ 
   const getStatusIcon = (status) => {
     if (status === 'Secure') return <ShieldCheck className="icon secure" />
     if (status === 'Warning') return <ShieldAlert className="icon warning" />
@@ -50,7 +53,7 @@ function App() {
     <div className="dashboard">
       <header>
         <h1><Shield className="header-icon" /> Email Security Analyzer</h1>
-        <p>Advanced DNS vulnerability scanning for SPF, DMARC, and DKIM</p>
+        <p>Advanced DNS vulnerability scanning with AI Auto-Remediation</p>
       </header>
 
       <main>
@@ -78,11 +81,24 @@ function App() {
               </button>
             </div>
 
+            {/* මේ ID එක ඇතුළේ තියෙන දේවල් තමයි PDF එකට යන්නේ */}
             <div id="report-content" className="pdf-container">
               <h2 className="report-title">Target Domain: {results.domain}</h2>
               <div className="results-grid">
                 
-                {/* SPF Card */}
+                {/* 1. AI Remediation Card */}
+                <div className="card info ai-glow">
+                  <div className="card-header">
+                    <Sparkles className="icon info" style={{color: '#a855f7'}} />
+                    <h2>AI Auto-Remediation</h2>
+                  </div>
+                  <div className="card-body">
+                    <span className="badge" style={{background: '#6b21a8'}}>Powered by Gemini AI</span>
+                    <p className="message" style={{lineHeight: '1.6'}}>{results.ai_remediation}</p>
+                  </div>
+                </div>
+
+                {/* 2. SPF Card */}
                 <div className={`card ${results.spf.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.spf.status)}
@@ -90,15 +106,11 @@ function App() {
                   </div>
                   <div className="card-body">
                     <span className="badge">{results.spf.status}</span>
-                    {results.spf.record ? (
-                      <p className="code-block">{results.spf.record}</p>
-                    ) : (
-                      <p className="message">{results.spf.message}</p>
-                    )}
+                    {results.spf.record ? <p className="code-block">{results.spf.record}</p> : <p className="message">{results.spf.message}</p>}
                   </div>
                 </div>
 
-                {/* DMARC Card */}
+                {/* 3. DMARC Card */}
                 <div className={`card ${results.dmarc.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.dmarc.status)}
@@ -106,15 +118,11 @@ function App() {
                   </div>
                   <div className="card-body">
                     <span className="badge">{results.dmarc.status}</span>
-                    {results.dmarc.record ? (
-                      <p className="code-block">{results.dmarc.record}</p>
-                    ) : (
-                      <p className="message">{results.dmarc.message}</p>
-                    )}
+                    {results.dmarc.record ? <p className="code-block">{results.dmarc.record}</p> : <p className="message">{results.dmarc.message}</p>}
                   </div>
                 </div>
 
-                {/* DKIM Card */}
+                {/* 4. DKIM Card */}
                 <div className={`card ${results.dkim.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.dkim.status)}
@@ -127,13 +135,11 @@ function App() {
                         <p className="selector">Selector: <strong>{results.dkim.selector}</strong></p>
                         <p className="code-block truncate">{results.dkim.record}</p>
                       </>
-                    ) : (
-                      <p className="message">{results.dkim.message}</p>
-                    )}
+                    ) : <p className="message">{results.dkim.message}</p>}
                   </div>
                 </div>
 
-                {/* Threat Intelligence Card */}
+                {/* 5. Threat Intelligence Card */}
                 <div className={`card ${results.virustotal.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.virustotal.status)}

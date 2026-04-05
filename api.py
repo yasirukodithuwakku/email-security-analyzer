@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import dns.resolver
 import requests
+import google.generativeai as genai
 
 app = FastAPI()
 
@@ -13,13 +14,33 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+VT_API_KEY = "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw"
+GEMINI_API_KEY = "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw"
 
-VT_API_KEY = "70239e556a7102acd316d0ec46b2b77feb876b86dea02ed5a3425eed06de170c"
+# Gemini AI Setup
+if GEMINI_API_KEY != "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw":
+    genai.configure(api_key=GEMINI_API_KEY)
+    model = genai.GenerativeModel('gemini-1.5-flash')
+
+def get_ai_remediation(domain, spf_status, dmarc_status):
+    if GEMINI_API_KEY == "YOUR_GEMINI_KEY":
+        return "Gemini API Key missing. Add the key to enable AI Auto-Remediation."
+    
+    prompt = f"""
+    You are a Cybersecurity Expert. I am analyzing the domain: {domain}.
+    The SPF status is: {spf_status}. 
+    The DMARC status is: {dmarc_status}.
+    If they are missing or have warnings, provide a short, 2-sentence actionable recommendation or the exact DNS record to fix it. If they are secure, just say "DNS records are properly configured. No remediation needed."
+    """
+    try:
+        response = model.generate_content(prompt)
+        return response.text
+    except Exception as e:
+        return f"AI Generation failed. Error: {str(e)}"
 
 def check_virustotal(domain):
     url = f"https://www.virustotal.com/api/v3/domains/{domain}"
     headers = {"x-apikey": VT_API_KEY}
-    
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
@@ -72,10 +93,15 @@ def check_dkim(domain):
 
 @app.get("/api/analyze/{domain}")
 async def analyze_domain(domain: str):
+    spf = check_spf(domain)
+    dmarc = check_dmarc(domain)
+    
     return {
         "domain": domain,
-        "spf": check_spf(domain),
-        "dmarc": check_dmarc(domain),
+        "spf": spf,
+        "dmarc": dmarc,
         "dkim": check_dkim(domain),
-        "virustotal": check_virustotal(domain) 
+        "virustotal": check_virustotal(domain),
+        "ai_remediation": get_ai_remediation(domain, spf['status'], dmarc['status']) 
     }
+
