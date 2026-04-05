@@ -1,24 +1,31 @@
-# Email Security Analyzer (SPF, DKIM, DMARC)
+# 🛡️ AI-Powered Email Security & Threat Intelligence Analyzer
 
-## Overview
-A Python-based cybersecurity tool designed to analyze the email security posture of any given domain. This tool fetches and evaluates DNS records to determine if a domain is properly protected against email spoofing and phishing attacks.
+A full-stack, automated cybersecurity tool designed for SOC Analysts and Security Engineers to analyze domain reputation and detect email spoofing vulnerabilities. It utilizes advanced DNS scanning combined with real-time Threat Intelligence and Generative AI for automated remediation.
 
-## Current Features
-* **SPF (Sender Policy Framework) Checker:** Verifies if the domain has a valid SPF record to prevent unauthorized IP addresses from sending emails on its behalf.
-* **DMARC Analysis:** Checks for DMARC policies that dictate how receiver servers should handle emails that fail SPF or DKIM authentication.
-* **DKIM Verification:** Scans common DNS selectors to find DomainKeys Identified Mail (DKIM) digital signatures, ensuring message integrity and non-repudiation.
+## ✨ Key Features
 
-## Prerequisites
-* Python 3.x
-* `dnspython` library
+* **Advanced DNS Vulnerability Scanning:** Deep analysis of SPF, DMARC, and DKIM records to identify email authentication gaps.
+* **AI Auto-Remediation (Google Gemini):** Automatically generates context-aware, actionable DNS configurations to fix identified security vulnerabilities.
+* **Real-Time Threat Intelligence:** Integrates with the **VirusTotal API** to check domain reputation against 70+ global security vendors and detect malicious activities.
+* **Professional Reporting:** Automated, one-click PDF incident report generation for SOC documentation.
+* **Interactive UI:** A modern, responsive dashboard built with React.js and Tailwind CSS concepts.
 
-## Installation & Usage
-1. Clone the repository:
-   `git clone https://github.com/yasirukodithuwakku/email-security-analyzer.git`
-2. Install dependencies:
-   `pip install dnspython`
-3. Run the tool:
-   `python3 email_analyzer.py`
+## 💻 Tech Stack
 
-## Educational Purpose
-This project was developed to practically demonstrate core concepts in Network Security and Incident Prevention.
+* **Frontend:** React.js, Vite, Axios, html2pdf.js, Lucide-React (Icons)
+* **Backend:** Python, FastAPI, Uvicorn
+* **Security & APIs:** `dnspython`, Google Gemini AI (Generative AI), VirusTotal API
+
+## 🚀 Getting Started
+
+### Prerequisites
+Make sure you have the following installed on your machine:
+* Python 3.8+
+* Node.js & npm
+* API Keys from [VirusTotal](https://www.virustotal.com/) and [Google AI Studio](https://aistudio.google.com/)
+
+### 1. Backend Setup (FastAPI)
+1. Navigate to the project root directory.
+2. Install the required Python packages:
+   ```bash
+   pip install fastapi uvicorn dnspython requests google-generativeai --break-system-packages
