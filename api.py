@@ -1,10 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 import dns.resolver
 import requests
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
+import csv
+import io
 
 load_dotenv()
 
@@ -21,8 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-VT_API_KEY = "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw"
-GEMINI_API_KEY = "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw"
 
 # Gemini AI Setup
 if GEMINI_API_KEY != "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw":
@@ -98,17 +98,33 @@ def check_dkim(domain):
             continue
     return {"status": "Info", "message": "No standard DKIM records found."}
 
-@app.get("/api/analyze/{domain}")
-async def analyze_domain(domain: str):
-    spf = check_spf(domain)
-    dmarc = check_dmarc(domain)
+@app.post("/api/bulk-analyze/")
+async def analyze_bulk(file: UploadFile = File(...)):
     
-    return {
-        "domain": domain,
-        "spf": spf,
-        "dmarc": dmarc,
-        "dkim": check_dkim(domain),
-        "virustotal": check_virustotal(domain),
-        "ai_remediation": get_ai_remediation(domain, spf['status'], dmarc['status']) 
-    }
+    content = await file.read()
+    decoded_content = content.decode('utf-8')
+    csv_reader = csv.reader(io.StringIO(decoded_content))
+    
+    bulk_results = []
+    
+    for row in csv_reader:
+        if not row:
+            continue
+        domain = row[0].strip()
+        if not domain:
+            continue
+            
+        
+        spf = check_spf(domain)
+        dmarc = check_dmarc(domain)
+        virustotal = check_virustotal(domain)
+        
+        bulk_results.append({
+            "domain": domain,
+            "spf_status": spf["status"],
+            "dmarc_status": dmarc["status"],
+            "virustotal_status": virustotal["status"]
+        })
+        
+    return {"results": bulk_results}
 

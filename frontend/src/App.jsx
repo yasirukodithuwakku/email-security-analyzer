@@ -3,9 +3,11 @@ import axios from 'axios'
 import { Shield, ShieldAlert, ShieldCheck, Search, Loader, Info, Download, Sparkles } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import './index.css'
+import BulkScanner from './components/BulkScanner'
 
 function App() {
   const [domain, setDomain] = useState('')
+  const [scanMode, setScanMode] = useState('single')
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState(null)
@@ -18,7 +20,6 @@ function App() {
     setResults(null)
 
     try {
-   
       const response = await axios.get(`http://127.0.0.1:8000/api/analyze/${domain}`)
       setResults(response.data)
     } catch (err) {
@@ -28,7 +29,6 @@ function App() {
     }
   }
 
-  
   const downloadPDF = () => {
     const element = document.getElementById('report-content');
     const opt = {
@@ -41,7 +41,6 @@ function App() {
     html2pdf().set(opt).from(element).save();
   }
 
- 
   const getStatusIcon = (status) => {
     if (status === 'Secure') return <ShieldCheck className="icon secure" />
     if (status === 'Warning') return <ShieldAlert className="icon warning" />
@@ -57,23 +56,76 @@ function App() {
       </header>
 
       <main>
-        <form onSubmit={analyzeDomain} className="search-bar">
-          <input
-            type="text"
-            placeholder="Enter domain (e.g., google.com)"
-            value={domain}
-            onChange={(e) => setDomain(e.target.value)}
-            required
-          />
-          <button type="submit" disabled={loading}>
-            {loading ? <Loader className="spin" /> : <Search />}
-            {loading ? 'Analyzing...' : 'Analyze'}
-          </button>
-        </form>
+       
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '4rem' }}>
+          
+          
+          <div className="card" style={{ width: '85%', maxWidth: '950px' }}>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              
+              
+              <div style={{ width: '100%', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setScanMode('single')}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '10px',
+                    border: scanMode === 'single' ? '1px solid #22d3ee' : '1px solid #334155',
+                    background: scanMode === 'single' ? 'rgba(34, 211, 238, 0.15)' : '#111827',
+                    color: '#e2e8f0',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Single Domain Scanner
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScanMode('bulk')}
+                  style={{
+                    padding: '0.65rem 1.25rem',
+                    borderRadius: '10px',
+                    border: scanMode === 'bulk' ? '1px solid #22d3ee' : '1px solid #334155',
+                    background: scanMode === 'bulk' ? 'rgba(34, 211, 238, 0.15)' : '#111827',
+                    color: '#e2e8f0',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  Bulk Domain Scanner
+                </button>
+              </div>
 
-        {error && <div className="error-message">{error}</div>}
+              {scanMode === 'single' ? (
+                <div style={{ width: '100%', marginBottom: '1rem' }}>
+                  <form onSubmit={analyzeDomain} className="search-bar">
+                    <input
+                      type="text"
+                      placeholder="Enter single domain (e.g., google.com)"
+                      value={domain}
+                      onChange={(e) => setDomain(e.target.value)}
+                      required
+                    />
+                    <button type="submit" disabled={loading}>
+                      {loading ? <Loader className="spin" /> : <Search />}
+                      {loading ? 'Analyzing...' : 'Analyze'}
+                    </button>
+                  </form>
+                </div>
+              ) : (
+                <div style={{ width: '100%' }}>
+                  <BulkScanner />
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        {scanMode === 'single' && error && <div className="error-message">{error}</div>}
 
-        {results && (
+        {scanMode === 'single' && results && (
           <div className="report-wrapper">
             <div className="report-actions">
               <button onClick={downloadPDF} className="download-btn">
@@ -81,12 +133,10 @@ function App() {
               </button>
             </div>
 
-            {/* මේ ID එක ඇතුළේ තියෙන දේවල් තමයි PDF එකට යන්නේ */}
             <div id="report-content" className="pdf-container">
               <h2 className="report-title">Target Domain: {results.domain}</h2>
               <div className="results-grid">
                 
-                {/* 1. AI Remediation Card */}
                 <div className="card info ai-glow">
                   <div className="card-header">
                     <Sparkles className="icon info" style={{color: '#a855f7'}} />
@@ -98,7 +148,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* 2. SPF Card */}
                 <div className={`card ${results.spf.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.spf.status)}
@@ -110,7 +159,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* 3. DMARC Card */}
                 <div className={`card ${results.dmarc.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.dmarc.status)}
@@ -122,7 +170,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* 4. DKIM Card */}
                 <div className={`card ${results.dkim.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.dkim.status)}
@@ -139,7 +186,6 @@ function App() {
                   </div>
                 </div>
 
-                {/* 5. Threat Intelligence Card */}
                 <div className={`card ${results.virustotal.status.toLowerCase()}`}>
                   <div className="card-header">
                     {getStatusIcon(results.virustotal.status)}
