@@ -4,6 +4,7 @@ import { Shield, ShieldAlert, ShieldCheck, Search, Loader, Info, Download, Spark
 import html2pdf from 'html2pdf.js'
 import './index.css'
 import BulkScanner from './components/BulkScanner'
+import PhishingScanner from './components/PhishingScanner'
 
 function App() {
   const [domain, setDomain] = useState('')
@@ -72,11 +73,18 @@ function App() {
           >
             Bulk Domain Scanner
           </button>
+          <button
+            type="button"
+            className={scanMode === 'phishing' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScanMode('phishing')}
+          >
+            Phishing URL Scanner
+          </button>
         </div>
 
         {/* Dynamic Tools Container */}
         <div className="tools-container">
-          {scanMode === 'single' ? (
+          {scanMode === 'single' && (
             <form onSubmit={analyzeDomain} className="search-bar">
               <input
                 type="text"
@@ -90,15 +98,21 @@ function App() {
                 {loading ? 'Analyzing...' : 'Analyze'}
               </button>
             </form>
-          ) : (
+          )}
+          
+          {scanMode === 'bulk' && (
             <div className="bulk-wrapper">
               <BulkScanner />
             </div>
           )}
+
+          {scanMode === 'phishing' && (
+            <div className="bulk-wrapper">
+              <PhishingScanner />
+            </div>
+          )}
         </div>
         
-        {scanMode === 'single' && error && <div className="error-message">{error}</div>}
-
         {/* Results Section */}
         {scanMode === 'single' && results && (
           <div className="report-wrapper">

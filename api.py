@@ -7,6 +7,7 @@ import os
 from dotenv import load_dotenv
 import csv
 import io
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -127,4 +128,52 @@ async def analyze_bulk(file: UploadFile = File(...)):
         })
         
     return {"results": bulk_results}
+
+    
+SAFE_BROWSING_API_KEY = os.getenv("SAFE_BROWSING_API_KEY")
+
+class URLRequest(BaseModel):
+    url: str
+
+@app.post("/api/check-phishing/")
+async def check_phishing(request: URLRequest):
+    url = request.url
+    
+    if not SAFE_BROWSING_API_KEY:
+        return {"status": "Error", "message": "Safe Browsing API Key is missing in backend."}
+
+    api_url = f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={SAFE_BROWSING_API_KEY}"
+    
+    payload = {
+        "client": {
+            "clientId": "email-security-analyzer",
+            "clientVersion": "1.0.0"
+        },
+        "threatInfo": {
+            "threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
+            "platformTypes": ["ANY_PLATFORM"],
+            "threatEntryTypes": ["URL"],
+            "threatEntries": [
+                {"url": url}
+            ]
+        }
+    }
+    
+    try:
+        response = requests.post(api_url, json=payload)
+        data = response.json()
+        
+        if "matches" in data:
+            return {
+                "status": "Vulnerable", 
+                "message": "Warning! This URL is flagged as dangerous (Phishing/Malware).", 
+                "details": data["matches"]
+            }
+        else:
+            return {
+                "status": "Secure", 
+                "message": "This URL appears to be safe."
+            }
+    except Exception as e:
+        return {"status": "Error", "message": f"Failed to check URL: {str(e)}"}
 
