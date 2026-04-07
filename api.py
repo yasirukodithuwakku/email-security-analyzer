@@ -175,5 +175,7 @@ async def check_phishing(request: URLRequest):
                 "message": "This URL appears to be safe."
             }
     except Exception as e:
-        return {"status": "Error", "message": f"Failed to check URL: {str(e)}"}
+        
+        print(f"Internal Backend Error: {str(e)}")
+        return {"status": "Error", "message": "An internal error occurred while checking the URL."}
 
