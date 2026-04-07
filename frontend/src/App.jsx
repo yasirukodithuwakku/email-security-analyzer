@@ -56,75 +56,50 @@ function App() {
       </header>
 
       <main>
-       
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '4rem' }}>
-          
-          
-          <div className="card" style={{ width: '85%', maxWidth: '950px' }}>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              
-              
-              <div style={{ width: '100%', marginBottom: '1.5rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => setScanMode('single')}
-                  style={{
-                    padding: '0.65rem 1.25rem',
-                    borderRadius: '10px',
-                    border: scanMode === 'single' ? '1px solid #22d3ee' : '1px solid #334155',
-                    background: scanMode === 'single' ? 'rgba(34, 211, 238, 0.15)' : '#111827',
-                    color: '#e2e8f0',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Single Domain Scanner
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setScanMode('bulk')}
-                  style={{
-                    padding: '0.65rem 1.25rem',
-                    borderRadius: '10px',
-                    border: scanMode === 'bulk' ? '1px solid #22d3ee' : '1px solid #334155',
-                    background: scanMode === 'bulk' ? 'rgba(34, 211, 238, 0.15)' : '#111827',
-                    color: '#e2e8f0',
-                    fontWeight: 600,
-                    cursor: 'pointer'
-                  }}
-                >
-                  Bulk Domain Scanner
-                </button>
-              </div>
+        {/* Scan Mode Toggle Buttons */}
+        <div className="scan-mode-toggle">
+          <button
+            type="button"
+            className={scanMode === 'single' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScanMode('single')}
+          >
+            Single Domain Scanner
+          </button>
+          <button
+            type="button"
+            className={scanMode === 'bulk' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScanMode('bulk')}
+          >
+            Bulk Domain Scanner
+          </button>
+        </div>
 
-              {scanMode === 'single' ? (
-                <div style={{ width: '100%', marginBottom: '1rem' }}>
-                  <form onSubmit={analyzeDomain} className="search-bar">
-                    <input
-                      type="text"
-                      placeholder="Enter single domain (e.g., google.com)"
-                      value={domain}
-                      onChange={(e) => setDomain(e.target.value)}
-                      required
-                    />
-                    <button type="submit" disabled={loading}>
-                      {loading ? <Loader className="spin" /> : <Search />}
-                      {loading ? 'Analyzing...' : 'Analyze'}
-                    </button>
-                  </form>
-                </div>
-              ) : (
-                <div style={{ width: '100%' }}>
-                  <BulkScanner />
-                </div>
-              )}
+        {/* Dynamic Tools Container */}
+        <div className="tools-container">
+          {scanMode === 'single' ? (
+            <form onSubmit={analyzeDomain} className="search-bar">
+              <input
+                type="text"
+                placeholder="Enter single domain (e.g., google.com)"
+                value={domain}
+                onChange={(e) => setDomain(e.target.value)}
+                required
+              />
+              <button type="submit" disabled={loading}>
+                {loading ? <Loader className="spin" /> : <Search />}
+                {loading ? 'Analyzing...' : 'Analyze'}
+              </button>
+            </form>
+          ) : (
+            <div className="bulk-wrapper">
+              <BulkScanner />
             </div>
-          </div>
+          )}
         </div>
         
         {scanMode === 'single' && error && <div className="error-message">{error}</div>}
 
+        {/* Results Section */}
         {scanMode === 'single' && results && (
           <div className="report-wrapper">
             <div className="report-actions">
@@ -134,7 +109,7 @@ function App() {
             </div>
 
             <div id="report-content" className="pdf-container">
-              <h2 className="report-title">Target Domain: {results.domain}</h2>
+              <h2 className="report-title">Target Domain: <span>{results.domain}</span></h2>
               <div className="results-grid">
                 
                 <div className="card info ai-glow">
@@ -143,8 +118,8 @@ function App() {
                     <h2>AI Auto-Remediation</h2>
                   </div>
                   <div className="card-body">
-                    <span className="badge" style={{background: '#6b21a8'}}>Powered by Gemini AI</span>
-                    <p className="message" style={{lineHeight: '1.6'}}>{results.ai_remediation}</p>
+                    <span className="badge ai-badge">Powered by Gemini AI</span>
+                    <p className="message ai-text">{results.ai_remediation}</p>
                   </div>
                 </div>
 
