@@ -19,7 +19,11 @@ const PhishingScanner = () => {
       const response = await axios.post("http://127.0.0.1:8000/api/check-phishing/", { url: url });
       setResult(response.data);
     } catch (err) {
-      setError("Failed to connect to the server.");
+      if (err.response && err.response.status === 429) {
+        setError("⚠️ Rate limit exceeded! You are scanning too fast. Please wait a minute.");
+      } else {
+        setError("Failed to connect to the server.");
+      }
     } finally {
       setLoading(false);
     }

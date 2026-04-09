@@ -1,20 +1,29 @@
-from fastapi import FastAPI, File, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
-import dns.resolver
-import requests
-import google.generativeai as genai
 import os
-from dotenv import load_dotenv
 import csv
 import io
+import requests
+import dns.resolver
+import google.generativeai as genai
+from dotenv import load_dotenv
 from pydantic import BaseModel
+from fastapi import FastAPI, File, UploadFile, Request
+from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 load_dotenv()
 
 VT_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+SAFE_BROWSING_API_KEY = os.getenv("SAFE_BROWSING_API_KEY")
 
 app = FastAPI()
+
+# --- Rate Limiter Setup ---
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,15 +33,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-# Gemini AI Setup
-if GEMINI_API_KEY != "AIzaSyACPYmyLy-Xvhf3t2ZDKv-KXQPC2CNfnKw":
+# --- Gemini AI Setup ---
+if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
     model = genai.GenerativeModel('gemini-1.5-flash')
 
 def get_ai_remediation(domain, spf_status, dmarc_status):
-    if GEMINI_API_KEY == "YOUR_GEMINI_KEY":
-        return "Gemini API Key missing. Add the key to enable AI Auto-Remediation."
+    if not GEMINI_API_KEY:
+        return "Gemini API Key missing. Please add it to your .env file to enable AI Auto-Remediation."
     
     prompt = f"""
     You are a Cybersecurity Expert. I am analyzing the domain: {domain}.
@@ -99,9 +107,30 @@ def check_dkim(domain):
             continue
     return {"status": "Info", "message": "No standard DKIM records found."}
 
-@app.post("/api/bulk-analyze/")
-async def analyze_bulk(file: UploadFile = File(...)):
+# 1. Single Domain Scanner
+@app.get("/api/analyze/{domain}")
+@limiter.limit("5/minute")
+async def analyze_domain(domain: str, request: Request):
+    spf = check_spf(domain)
+    dmarc = check_dmarc(domain)
+    dkim = check_dkim(domain)
+    virustotal = check_virustotal(domain)
     
+    ai_remediation = get_ai_remediation(domain, spf["status"], dmarc["status"])
+    
+    return {
+        "domain": domain,
+        "spf": spf,
+        "dmarc": dmarc,
+        "dkim": dkim,
+        "virustotal": virustotal,
+        "ai_remediation": ai_remediation
+    }
+
+# 2. Bulk Domain Scanner
+@app.post("/api/bulk-analyze/")
+@limiter.limit("2/minute")
+async def analyze_bulk(request: Request, file: UploadFile = File(...)):
     content = await file.read()
     decoded_content = content.decode('utf-8')
     csv_reader = csv.reader(io.StringIO(decoded_content))
@@ -115,7 +144,6 @@ async def analyze_bulk(file: UploadFile = File(...)):
         if not domain:
             continue
             
-        
         spf = check_spf(domain)
         dmarc = check_dmarc(domain)
         virustotal = check_virustotal(domain)
@@ -129,15 +157,14 @@ async def analyze_bulk(file: UploadFile = File(...)):
         
     return {"results": bulk_results}
 
-    
-SAFE_BROWSING_API_KEY = os.getenv("SAFE_BROWSING_API_KEY")
-
+# 3. Phishing URL Scanner
 class URLRequest(BaseModel):
     url: str
 
 @app.post("/api/check-phishing/")
-async def check_phishing(request: URLRequest):
-    url = request.url
+@limiter.limit("10/minute")
+async def check_phishing(request_data: URLRequest, request: Request):
+    url = request_data.url
     
     if not SAFE_BROWSING_API_KEY:
         return {"status": "Error", "message": "Safe Browsing API Key is missing in backend."}
@@ -175,7 +202,5 @@ async def check_phishing(request: URLRequest):
                 "message": "This URL appears to be safe."
             }
     except Exception as e:
-        
         print(f"Internal Backend Error: {str(e)}")
         return {"status": "Error", "message": "An internal error occurred while checking the URL."}
-

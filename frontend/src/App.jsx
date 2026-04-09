@@ -24,7 +24,11 @@ function App() {
       const response = await axios.get(`http://127.0.0.1:8000/api/analyze/${domain}`)
       setResults(response.data)
     } catch (err) {
-      setError("Failed to connect to the server. Make sure your Python backend is running.")
+      if (err.response && err.response.status === 429) {
+        setError("⚠️ Rate limit exceeded! Please wait a minute before trying again.");
+      } else {
+        setError("Failed to connect to the server. Make sure your Python backend is running.");
+      }
     } finally {
       setLoading(false)
     }
