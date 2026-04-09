@@ -1,31 +1,39 @@
-# 🛡️ AI-Powered Email Security & Threat Intelligence Analyzer
+# 🛡️ Email Security Analyzer & SOC Dashboard
 
-A full-stack, automated cybersecurity tool designed for SOC Analysts and Security Engineers to analyze domain reputation and detect email spoofing vulnerabilities. It utilizes advanced DNS scanning combined with real-time Threat Intelligence and Generative AI for automated remediation.
+An Enterprise-Grade, Full-Stack Cybersecurity tool designed to analyze domains and URLs for email spoofing vulnerabilities, malicious activities, and phishing threats. It features an interactive Security Operations Center (SOC) dashboard and AI-driven auto-remediation.
 
 ## ✨ Key Features
 
-* **Advanced DNS Vulnerability Scanning:** Deep analysis of SPF, DMARC, and DKIM records to identify email authentication gaps.
-* **AI Auto-Remediation (Google Gemini):** Automatically generates context-aware, actionable DNS configurations to fix identified security vulnerabilities.
-* **Real-Time Threat Intelligence:** Integrates with the **VirusTotal API** to check domain reputation against 70+ global security vendors and detect malicious activities.
-* **Professional Reporting:** Automated, one-click PDF incident report generation for SOC documentation.
-* **Interactive UI:** A modern, responsive dashboard built with React.js and Tailwind CSS concepts.
+* **🔍 Single & Bulk Domain Scanning:** Analyzes SPF and DMARC records to prevent email spoofing.
+* **🧠 AI Auto-Remediation:** Uses Google Gemini AI to provide instant, actionable fixes for misconfigured DNS records.
+* **🦠 Threat Intelligence Integration:** Checks domains against the VirusTotal API and URLs against Google Safe Browsing API.
+* **📊 SOC Analytics Dashboard:** Interactive data visualization of scan history and risk distribution using Recharts.
+* **🔐 Secure User Authentication:** JWT-based login/signup system with hashed passwords and SQLite database.
+* **🛑 Advanced Security:** Built-in API rate limiting and brute-force protection using SlowAPI.
 
-## 💻 Tech Stack
+## 🛠️ Technology Stack
 
-* **Frontend:** React.js, Vite, Axios, html2pdf.js, Lucide-React (Icons)
-* **Backend:** Python, FastAPI, Uvicorn
-* **Security & APIs:** `dnspython`, Google Gemini AI (Generative AI), VirusTotal API
+* **Frontend:** React.js, Vite, Recharts, Lucide Icons
+* **Backend:** Python, FastAPI, SQLAlchemy
+* **Database:** SQLite
+* **APIs & AI:** Google Gemini (Generative AI), VirusTotal API, Google Safe Browsing API
 
 ## 🚀 Getting Started
 
+Follow these steps to set up the project locally.
+
 ### Prerequisites
-Make sure you have the following installed on your machine:
 * Python 3.8+
 * Node.js & npm
-* API Keys from [VirusTotal](https://www.virustotal.com/) and [Google AI Studio](https://aistudio.google.com/)
 
 ### 1. Backend Setup (FastAPI)
-1. Navigate to the project root directory.
-2. Install the required Python packages:
-   ```bash
-   pip install fastapi uvicorn dnspython requests google-generativeai --break-system-packages
+Navigate to the root directory and install the required Python packages:
+
+```bash
+# Install dependencies
+pip install fastapi uvicorn requests dnspython python-dotenv pydantic sqlalchemy slowapi passlib[bcrypt] python-jose python-multipart google-generativeai
+
+# Create a .env file and add your API keys (see Environment Variables below)
+
+# Run the backend server
+uvicorn api:app --reload
