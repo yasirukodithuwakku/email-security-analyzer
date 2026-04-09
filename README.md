@@ -33,7 +33,6 @@ Navigate to the root directory and install the required Python packages:
 # Install dependencies
 pip install fastapi uvicorn requests dnspython python-dotenv pydantic sqlalchemy slowapi passlib[bcrypt] python-jose python-multipart google-generativeai
 
-# Create a .env file and add your API keys (see Environment Variables below)
 
 # Run the backend server
 uvicorn api:app --reload
