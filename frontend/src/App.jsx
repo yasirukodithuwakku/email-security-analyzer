@@ -1,12 +1,38 @@
-import { useState } from 'react'
 import axios from 'axios'
 import { Shield, ShieldAlert, ShieldCheck, Search, Loader, Info, Download, Sparkles } from 'lucide-react'
 import html2pdf from 'html2pdf.js'
 import './index.css'
 import BulkScanner from './components/BulkScanner'
 import PhishingScanner from './components/PhishingScanner'
+import AnalyticsDashboard from './components/AnalyticsDashboard'
+import React, { useState, useEffect } from 'react';
+import AuthPage from './components/AuthPage';
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loggedInUser, setLoggedInUser] = useState('');
+
+ 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const user = localStorage.getItem('username');
+    if (token && user) {
+      setIsAuthenticated(true);
+      setLoggedInUser(user);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    setIsAuthenticated(false);
+    setLoggedInUser('');
+  };
+
+ 
+  
+
+
   const [domain, setDomain] = useState('')
   const [scanMode, setScanMode] = useState('single')
   const [loading, setLoading] = useState(false)
@@ -53,11 +79,32 @@ function App() {
     return <Shield className="icon error" />
   }
 
+  if (!isAuthenticated) {
+    return <AuthPage onLoginSuccess={() => {
+      setIsAuthenticated(true);
+      setLoggedInUser(localStorage.getItem('username'));
+    }} />;
+  }
+
   return (
     <div className="dashboard">
-      <header>
-        <h1><Shield className="header-icon" /> Email Security Analyzer</h1>
-        <p>Advanced DNS vulnerability scanning with AI Auto-Remediation</p>
+      <header className="app-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <Shield className="logo-icon" size={36} />
+            <div>
+              <h1>Email Security Analyzer</h1>
+              <p className="subtitle">Advanced DNS vulnerability scanning with AI Auto-Remediation</p>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <span style={{ color: '#94a3b8' }}>Hello, <b>{loggedInUser}</b></span>
+            <button onClick={handleLogout} style={{ padding: '8px 16px', background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', cursor: 'pointer' }}>
+              Logout
+            </button>
+          </div>
+        </div>
       </header>
 
       <main>
@@ -83,6 +130,13 @@ function App() {
             onClick={() => setScanMode('phishing')}
           >
             Phishing URL Scanner
+          </button>
+          <button
+            type="button"
+            className={scanMode === 'dashboard' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScanMode('dashboard')}
+          >
+            SOC Dashboard
           </button>
         </div>
 
@@ -115,6 +169,13 @@ function App() {
               <PhishingScanner />
             </div>
           )}
+
+          {scanMode === 'dashboard' && (
+            <div className="bulk-wrapper">
+              <AnalyticsDashboard />
+            </div>
+          )}
+
         </div>
         
         {/* Results Section */}
