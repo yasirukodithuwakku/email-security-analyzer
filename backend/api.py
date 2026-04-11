@@ -137,17 +137,17 @@ def check_dkim(domain):
     return {"status": "Info", "message": "No standard DKIM records found."}
 
 
+
+
 class UserCreate(BaseModel):
     username: str
     password: str
 
 @app.post("/api/signup")
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
-    
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
-    
     
     if len(user.password) < 8 or not any(char.isdigit() for char in user.password) or not any(char.isupper() for char in user.password):
         raise HTTPException(
@@ -173,9 +173,32 @@ async def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends
     access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer", "username": user.username}
 
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+    
+    user = db.query(User).filter(User.username == username).first()
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+
 @app.get("/api/analyze/{domain}")
 @limiter.limit("5/minute")
-async def analyze_domain(domain: str, request: Request, db: Session = Depends(get_db)):
+async def analyze_domain(domain: str, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     spf = check_spf(domain)
     dmarc = check_dmarc(domain)
     dkim = check_dkim(domain)
@@ -186,14 +209,15 @@ async def analyze_domain(domain: str, request: Request, db: Session = Depends(ge
     if virustotal["status"] == "Vulnerable":
         overall_status = "Vulnerable"
         
-    db.add(ScanRecord(target=domain, scan_type="Single", risk_status=overall_status))
+    
+    db.add(ScanRecord(target=domain, scan_type="Single", risk_status=overall_status, user_id=current_user.id))
     db.commit()
 
     return {"domain": domain, "spf": spf, "dmarc": dmarc, "dkim": dkim, "virustotal": virustotal, "ai_remediation": ai_remediation}
 
 @app.post("/api/bulk-analyze/")
 @limiter.limit("2/minute")
-async def analyze_bulk(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def analyze_bulk(request: Request, file: UploadFile = File(...), db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     content = await file.read()
     csv_reader = csv.reader(io.StringIO(content.decode('utf-8')))
     bulk_results = []
@@ -205,7 +229,9 @@ async def analyze_bulk(request: Request, file: UploadFile = File(...), db: Sessi
         virustotal = check_virustotal(domain)
         status = "Secure" if spf["status"] == "Secure" and dmarc["status"] == "Secure" else "Warning"
         bulk_results.append({"domain": domain, "spf_status": spf["status"], "dmarc_status": dmarc["status"], "virustotal_status": virustotal["status"]})
-        db.add(ScanRecord(target=domain, scan_type="Bulk", risk_status=status))
+        
+        
+        db.add(ScanRecord(target=domain, scan_type="Bulk", risk_status=status, user_id=current_user.id))
     db.commit()
     return {"results": bulk_results}
 
@@ -214,25 +240,27 @@ class URLRequest(BaseModel):
 
 @app.post("/api/check-phishing/")
 @limiter.limit("10/minute")
-async def check_phishing(request_data: URLRequest, request: Request, db: Session = Depends(get_db)):
+async def check_phishing(request_data: URLRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     url = request_data.url
     if not SAFE_BROWSING_API_KEY: return {"status": "Error", "message": "API Key missing."}
     payload = {"client": {"clientId": "analyzer", "clientVersion": "1.0"}, "threatInfo": {"threatTypes": ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE"], "platformTypes": ["ANY_PLATFORM"], "threatEntryTypes": ["URL"], "threatEntries": [{"url": url}]}}
     try:
         response = requests.post(f"https://safebrowsing.googleapis.com/v4/threatMatches:find?key={SAFE_BROWSING_API_KEY}", json=payload).json()
         if "matches" in response:
-            db.add(ScanRecord(target=url, scan_type="Phishing", risk_status="Vulnerable"))
+            db.add(ScanRecord(target=url, scan_type="Phishing", risk_status="Vulnerable", user_id=current_user.id))
             db.commit()
             return {"status": "Vulnerable", "message": "Warning! Dangerous URL.", "details": response["matches"]}
-        db.add(ScanRecord(target=url, scan_type="Phishing", risk_status="Secure"))
+            
+        db.add(ScanRecord(target=url, scan_type="Phishing", risk_status="Secure", user_id=current_user.id))
         db.commit()
         return {"status": "Secure", "message": "Safe URL."}
     except Exception as e:
         return {"status": "Error", "message": str(e)}
 
 @app.get("/api/scan-history/")
-async def get_scan_history(db: Session = Depends(get_db)):
+async def get_scan_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     try:
-        return db.query(ScanRecord).order_by(ScanRecord.timestamp.desc()).limit(100).all()
+        
+        return db.query(ScanRecord).filter(ScanRecord.user_id == current_user.id).order_by(ScanRecord.timestamp.desc()).limit(100).all()
     except:
         return {"status": "Error", "message": "Failed to fetch scan history."}
