@@ -324,4 +324,7 @@ async def analyze_email_header(request_data: HeaderRequest, request: Request, db
         return {"status": "Success", "data": results}
 
     except Exception as e:
-        return {"status": "Error", "message": f"Failed to parse header. Make sure it is a valid raw email header. Error: {str(e)}"}
+    print(f"Internal Parsing Error: {str(e)}") 
+    
+    
+    return {"status": "Error", "message": "Failed to parse header. Make sure it is a valid raw email header."}
