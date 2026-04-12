@@ -4,6 +4,8 @@ import io
 import requests
 import dns.resolver
 import google.generativeai as genai
+import email
+import re
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile, Request, Depends, HTTPException, status
@@ -13,6 +15,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta, timezone
+
 
 # --- Auth Packages ---
 from passlib.context import CryptContext
@@ -264,3 +267,61 @@ async def get_scan_history(db: Session = Depends(get_db), current_user: User = D
         return db.query(ScanRecord).filter(ScanRecord.user_id == current_user.id).order_by(ScanRecord.timestamp.desc()).limit(100).all()
     except:
         return {"status": "Error", "message": "Failed to fetch scan history."}
+
+
+class HeaderRequest(BaseModel):
+    headers: str
+
+@app.post("/api/analyze-header/")
+@limiter.limit("10/minute")
+async def analyze_email_header(request_data: HeaderRequest, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    raw_headers = request_data.headers
+    
+    try:
+        
+        msg = email.message_from_string(raw_headers)
+
+        subject = msg.get('Subject', 'Unknown')
+        from_email = msg.get('From', 'Unknown')
+        to_email = msg.get('To', 'Unknown')
+        date = msg.get('Date', 'Unknown')
+        message_id = msg.get('Message-ID', 'Unknown')
+        return_path = msg.get('Return-Path', 'Unknown')
+
+        # 2. ගමන් කරපු මාර්ගය (Hops / Received Headers)
+        received_headers = msg.get_all('Received') or []
+        hops = []
+        for i, hop in enumerate(received_headers):
+            # IP Address එකක් තියෙනවද කියලා හොයනවා (Regex)
+            ip_match = re.search(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', hop)
+            ip = ip_match.group(0) if ip_match else "Not Found"
+            hops.append({
+                "hop_number": i + 1, 
+                "ip": ip,
+                "details": hop.strip()[:150] + "..." # දිග වැඩි නිසා අකුරු 150ක් විතරක් ගමු
+            })
+
+        # 3. Authentication ප්‍රතිඵල (SPF, DKIM, DMARC)
+        auth_results = msg.get('Authentication-Results', 'No Authentication Info Found')
+
+        results = {
+            "basic_info": {
+                "Subject": subject,
+                "From": from_email,
+                "To": to_email,
+                "Date": date,
+                "Message-ID": message_id,
+                "Return_Path": return_path
+            },
+            "hops": hops,
+            "authentication": auth_results
+        }
+
+        
+        db.add(ScanRecord(target=f"Email: {subject[:30]}", scan_type="Forensic", risk_status="Info", user_id=current_user.id))
+        db.commit()
+
+        return {"status": "Success", "data": results}
+
+    except Exception as e:
+        return {"status": "Error", "message": f"Failed to parse header. Make sure it is a valid raw email header. Error: {str(e)}"}
