@@ -7,6 +7,7 @@ import PhishingScanner from './components/PhishingScanner'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
 import React, { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
+import EmailHeaderAnalyzer from './components/EmailHeaderAnalyzer';
 
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -161,6 +162,14 @@ function App() {
           >
             SOC Dashboard
           </button>
+
+          <button
+            type="button"
+            className={scanMode === 'forensic' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScanMode('forensic')}
+          >
+            Header Forensic
+          </button>
         </div>
 
         {/* Dynamic Tools Container */}
@@ -174,6 +183,11 @@ function App() {
                 onChange={(e) => setDomain(e.target.value)}
                 required
               />
+          {scanMode === 'forensic' && (
+            <div className="bulk-wrapper">
+              <EmailHeaderAnalyzer />
+            </div>
+          )}
               <button type="submit" disabled={loading}>
                 {loading ? <Loader className="spin" /> : <Search />}
                 {loading ? 'Analyzing...' : 'Analyze'}
