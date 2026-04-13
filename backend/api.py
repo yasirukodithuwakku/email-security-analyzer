@@ -6,6 +6,7 @@ import dns.resolver
 import google.generativeai as genai
 import email
 import re
+import socket 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile, Request, Depends, HTTPException, status
@@ -288,20 +289,20 @@ async def analyze_email_header(request_data: HeaderRequest, request: Request, db
         message_id = msg.get('Message-ID', 'Unknown')
         return_path = msg.get('Return-Path', 'Unknown')
 
-        # 2. ගමන් කරපු මාර්ගය (Hops / Received Headers)
+       
         received_headers = msg.get_all('Received') or []
         hops = []
         for i, hop in enumerate(received_headers):
-            # IP Address එකක් තියෙනවද කියලා හොයනවා (Regex)
+            
             ip_match = re.search(r'\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b', hop)
             ip = ip_match.group(0) if ip_match else "Not Found"
             hops.append({
                 "hop_number": i + 1, 
                 "ip": ip,
-                "details": hop.strip()[:150] + "..." # දිග වැඩි නිසා අකුරු 150ක් විතරක් ගමු
+                "details": hop.strip()[:150] + "..." 
             })
 
-        # 3. Authentication ප්‍රතිඵල (SPF, DKIM, DMARC)
+       
         auth_results = msg.get('Authentication-Results', 'No Authentication Info Found')
 
         results = {
@@ -324,7 +325,66 @@ async def analyze_email_header(request_data: HeaderRequest, request: Request, db
         return {"status": "Success", "data": results}
 
     except Exception as e:
-    print(f"Internal Parsing Error: {str(e)}") 
+        print(f"Internal Parsing Error: {str(e)}") 
+        return {"status": "Error", "message": "Failed to parse header. Make sure it is a valid raw email header."}
     
     
     return {"status": "Error", "message": "Failed to parse header. Make sure it is a valid raw email header."}
+
+
+# SUBDOMAIN & PORT SCANNER (VAPT)
+@app.get("/api/network-scan/{domain}")
+@limiter.limit("5/minute")
+async def network_scan(domain: str, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    
+    
+    subdomains = set()
+    try:
+       
+        res = requests.get(f"https://crt.sh/?q=%25.{domain}&output=json", timeout=15)
+        if res.status_code == 200:
+            for entry in res.json():
+                name = entry['name_value'].lower()
+                
+                if '*' not in name:
+                    subdomains.add(name)
+    except Exception as e:
+        print(f"Subdomain Fetch Error: {str(e)}")
+    
+    
+    subdomains_list = list(subdomains)[:20]
+
+    
+    ports_to_check = {
+        21: "FTP",
+        25: "SMTP (Unencrypted Mail)",
+        80: "HTTP (Web)",
+        110: "POP3 (Mail Receipt)",
+        443: "HTTPS (Secure Web)",
+        465: "SMTPS (Secure Mail)",
+        587: "SMTP (Mail Submission)",
+        3306: "MySQL Database"
+    }
+    
+    open_ports = []
+    
+   
+    for port, desc in ports_to_check.items():
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(1.0) 
+        result = sock.connect_ex((domain, port))
+        if result == 0:
+            open_ports.append({"port": port, "service": desc, "status": "Open"})
+        sock.close()
+
+
+    db.add(ScanRecord(target=f"Network: {domain}", scan_type="Network VAPT", risk_status="Info", user_id=current_user.id))
+    db.commit()
+
+    return {
+        "status": "Success", 
+        "domain": domain, 
+        "total_subdomains_found": len(subdomains),
+        "subdomains": subdomains_list, 
+        "open_ports": open_ports
+    }
