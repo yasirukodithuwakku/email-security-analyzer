@@ -8,6 +8,8 @@ import AnalyticsDashboard from './components/AnalyticsDashboard'
 import React, { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
 import EmailHeaderAnalyzer from './components/EmailHeaderAnalyzer';
+import SubdomainScanner from './components/SubdomainScanner';
+
 
 axios.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -170,6 +172,15 @@ function App() {
           >
             Header Forensic
           </button>
+
+          <button
+            type="button"
+            className={scanMode === 'network' ? 'toggle-btn active' : 'toggle-btn'}
+            onClick={() => setScanMode('network')}
+          >
+            Network VAPT
+          </button>
+
         </div>
 
         {/* Dynamic Tools Container */}
@@ -178,16 +189,12 @@ function App() {
             <form onSubmit={analyzeDomain} className="search-bar">
               <input
                 type="text"
-                placeholder="Enter single domain (e.g., google.com)"
+                placeholder="Enter single domain"
                 value={domain}
                 onChange={(e) => setDomain(e.target.value)}
                 required
               />
-          {scanMode === 'forensic' && (
-            <div className="bulk-wrapper">
-              <EmailHeaderAnalyzer />
-            </div>
-          )}
+          
               <button type="submit" disabled={loading}>
                 {loading ? <Loader className="spin" /> : <Search />}
                 {loading ? 'Analyzing...' : 'Analyze'}
@@ -210,6 +217,18 @@ function App() {
           {scanMode === 'dashboard' && (
             <div className="bulk-wrapper">
               <AnalyticsDashboard />
+            </div>
+          )}
+
+          {scanMode === 'forensic' && (
+            <div className="bulk-wrapper">
+              <EmailHeaderAnalyzer />
+            </div>
+          )}
+
+          {scanMode === 'network' && (
+            <div className="bulk-wrapper">
+              <SubdomainScanner />
             </div>
           )}
 
