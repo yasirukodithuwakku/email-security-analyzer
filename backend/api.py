@@ -58,7 +58,7 @@ app.add_middleware(
 # --- Gemini AI Setup ---
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash')
 
 def get_db():
     db = SessionLocal()
@@ -337,6 +337,7 @@ async def analyze_email_header(request_data: HeaderRequest, request: Request, db
 @limiter.limit("5/minute")
 async def network_scan(domain: str, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     
+    domain = domain.lower().strip()
     
     subdomains = set()
     try:
@@ -388,3 +389,4 @@ async def network_scan(domain: str, request: Request, db: Session = Depends(get_
         "subdomains": subdomains_list, 
         "open_ports": open_ports
     }
+
