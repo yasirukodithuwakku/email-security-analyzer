@@ -39,7 +39,7 @@ const PhishingScanner = () => {
       <form onSubmit={handleScan} className="search-bar" style={{ marginBottom: '2rem' }}>
         <input
           type="url"
-          placeholder="Enter full URL (e.g., https://login.paypal-update.com)"
+          placeholder="Enter full URL"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
           required

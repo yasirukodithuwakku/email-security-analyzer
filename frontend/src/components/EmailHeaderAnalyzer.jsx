@@ -42,7 +42,7 @@ const EmailHeaderAnalyzer = () => {
       <textarea
         value={headerText}
         onChange={(e) => setHeaderText(e.target.value)}
-        placeholder="Paste Raw Email Header here... (e.g., Delivered-To: user@example.com\nReceived: by 2002:a05:...)"
+        placeholder="Paste Raw Email Header here... "
         style={{ width: '100%', height: '200px', backgroundColor: '#0f172a', color: '#10b981', padding: '1rem', borderRadius: '8px', border: '1px solid #334155', fontFamily: 'monospace', marginBottom: '1rem' }}
       />
 
