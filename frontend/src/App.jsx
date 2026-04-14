@@ -9,6 +9,9 @@ import React, { useState, useEffect } from 'react';
 import AuthPage from './components/AuthPage';
 import EmailHeaderAnalyzer from './components/EmailHeaderAnalyzer';
 import SubdomainScanner from './components/SubdomainScanner';
+import ExecutiveReport from './components/ExecutiveReport';
+import { Toaster, toast } from 'react-hot-toast';
+import { supabase } from './components/supabaseClient';
 
 
 axios.interceptors.request.use((config) => {
@@ -48,15 +51,47 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    
+    const subscription = supabase
+      .channel('soc-alerts')
+      .on(
+        'postgres_changes',
+        
+        { event: 'INSERT', schema: 'public', table: 'scan_records' }, 
+        (payload) => {
+          const newData = payload.new;
+          
+          
+          if (newData.risk_status === 'Critical' || newData.risk_status === 'Warning') {
+            toast.error(`🚨 Alert: High risk detected on ${newData.target}`, {
+              duration: 5000,
+              position: 'bottom-right',
+              style: { background: '#7f1d1d', color: '#fff', border: '1px solid #ef4444' }
+            });
+          } else {
+            toast.success(`✅ Info: New scan completed for ${newData.target}`, {
+              duration: 4000,
+              position: 'bottom-right',
+              style: { background: '#064e3b', color: '#fff', border: '1px solid #10b981' }
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     setIsAuthenticated(false);
     setLoggedInUser('');
   };
-
- 
-  
 
 
   const [domain, setDomain] = useState('')
@@ -87,15 +122,32 @@ function App() {
   }
 
   const downloadPDF = () => {
-    const element = document.getElementById('report-content');
+    const element = document.getElementById('executive-pdf-template');
+
+    
+    element.style.display = 'block';
+    element.style.position = 'absolute';
+    element.style.top = '0';
+    element.style.left = '0';
+    element.style.zIndex = '-9999';
+
     const opt = {
-      margin:       0.5,
-      filename:     `${domain}-security-report.pdf`,
+      margin:       0,
+      filename:     `Executive_Report_${domain}.pdf`,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2, backgroundColor: '#0b1120' },
-      jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
-    html2pdf().set(opt).from(element).save();
+    
+    alert("Generating Executive PDF Report... Please wait.");
+
+    
+    setTimeout(() => {
+      html2pdf().set(opt).from(element).save().then(() => {
+        
+        element.style.display = 'none';
+      });
+    }, 500); 
   }
 
   const getStatusIcon = (status) => {
@@ -114,6 +166,7 @@ function App() {
 
   return (
     <div className="dashboard">
+      <Toaster />
       <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
@@ -239,10 +292,12 @@ function App() {
           <div className="report-wrapper">
             <div className="report-actions">
               <button onClick={downloadPDF} className="download-btn">
-                <Download size={18} /> Download PDF Report
+                <Download size={18} /> Download Executive PDF
               </button>
             </div>
 
+            <ExecutiveReport results={results} />
+            
             <div id="report-content" className="pdf-container">
               <h2 className="report-title">Target Domain: <span>{results.domain}</span></h2>
               <div className="results-grid">
@@ -252,6 +307,7 @@ function App() {
                     <Sparkles className="icon info" style={{color: '#a855f7'}} />
                     <h2>AI Auto-Remediation</h2>
                   </div>
+                
                   <div className="card-body">
                     <span className="badge ai-badge">Powered by Gemini AI</span>
                     <p className="message ai-text">{results.ai_remediation}</p>
