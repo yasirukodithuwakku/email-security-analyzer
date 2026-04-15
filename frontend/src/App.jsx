@@ -13,29 +13,7 @@ import ExecutiveReport from './components/ExecutiveReport';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from './components/supabaseClient';
 
-
-axios.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-}, (error) => {
-  return Promise.reject(error);
-});
-
-
-axios.interceptors.response.use((response) => {
-  return response;
-}, (error) => {
-  if (error.response && error.response.status === 401) {
-    
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    window.location.reload(); 
-  }
-  return Promise.reject(error);
-});
+axios.defaults.withCredentials = true;
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
