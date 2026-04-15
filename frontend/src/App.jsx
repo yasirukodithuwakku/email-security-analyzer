@@ -15,15 +15,27 @@ import { supabase } from './components/supabaseClient';
 
 axios.defaults.withCredentials = true;
 
+axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
+
+axios.interceptors.response.use((response) => {
+  return response;
+}, (error) => {
+  if (error.response && error.response.status === 401) {
+    localStorage.removeItem('username'); 
+    localStorage.removeItem('token'); 
+    window.location.reload(); 
+  }
+  return Promise.reject(error);
+});
+
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loggedInUser, setLoggedInUser] = useState('');
 
  
   useEffect(() => {
-    const token = localStorage.getItem('token');
     const user = localStorage.getItem('username');
-    if (token && user) {
+    if (user) {
       setIsAuthenticated(true);
       setLoggedInUser(user);
     }
