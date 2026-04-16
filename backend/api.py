@@ -138,25 +138,50 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
     return {"status": "Success", "message": "User account created successfully!"}
 
 
+
 @app.post("/api/login")
-@limiter.limit("5/minute") 
+@limiter.limit("10/minute") 
 async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    # Authenticate against actual database
     user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Incorrect username or password")
     
-    # Generate Token
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+    if user.lockout_until and datetime.now(timezone.utc) < user.lockout_until.replace(tzinfo=timezone.utc):
+        time_left = (user.lockout_until.replace(tzinfo=timezone.utc) - datetime.now(timezone.utc)).seconds // 60
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Account locked due to multiple failed attempts. Try again in {time_left} minutes."
+        )
+
+   
+    if not verify_password(form_data.password, user.password_hash):
+
+        user.failed_login_attempts += 1
+        
+    
+        if user.failed_login_attempts >= 5:
+            user.lockout_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+            db.commit()
+            raise HTTPException(status_code=403, detail="Too many failed attempts. Account locked for 15 minutes.")
+        
+        db.commit()
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
+  
+    user.failed_login_attempts = 0
+    user.lockout_until = None
+    db.commit()
+
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(data={"sub": user.username}, expires_delta=access_token_expires)
     
-    # Set HttpOnly Cookie
     response.set_cookie(
         key="access_token",
         value=f"Bearer {access_token}",
         httponly=True,   
         samesite="lax",  
-        secure=False     # Set to True in production (HTTPS)
+        secure=False     
     )
     
     return {"message": "Login successful", "username": user.username}
