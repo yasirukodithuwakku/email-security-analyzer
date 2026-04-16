@@ -1,16 +1,34 @@
-# React + Vite
+# Email Security Analyzer 🛡️
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Advanced DNS vulnerability scanning tool with AI-powered auto-remediation. This project helps security professionals analyze domain security (SPF, DMARC, DKIM), detect phishing URLs, and perform network VAPT.
 
-Currently, two official plugins are available:
+## 🚀 Key Features
+* **Single/Bulk Domain Scanner:** Detailed SPF, DMARC, and DKIM analysis.
+* **AI Auto-Remediation:** Actionable security recommendations using Gemini AI.
+* **Phishing URL Scanner:** Integration with Google Safe Browsing.
+* **Header Forensics:** Deep analysis of raw email headers and routing hops.
+* **Network VAPT:** Subdomain discovery and open port scanning.
+* **SOC Dashboard:** Real-time scan history and security alerts.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🔒 Security Architecture (Bank-Level Security)
+This project implements industry-standard security practices to protect user data:
 
-## React Compiler
+1.  **HttpOnly JWT Authentication:** * Tokens are stored in **HttpOnly Cookies**, making them inaccessible to client-side JavaScript. This provides 100% protection against **XSS (Cross-Site Scripting)** attacks.
+    * Cookies are configured with `SameSite=Lax` to mitigate **CSRF** risks while maintaining usability.
+2.  **Password Hashing:** * Uses **Bcrypt** with `passlib` for robust password hashing. Plain-text passwords are never stored in the database.
+3.  **CORS Policy:** * Strict origin validation using environment variables to ensure only authorized frontend domains can interact with the API.
+4.  **Rate Limiting:** * Prevents brute-force and DoS attacks by limiting the number of requests per minute for sensitive endpoints.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🛠️ Tech Stack
+* **Backend:** FastAPI (Python), SQLAlchemy, PostgreSQL/SQLite.
+* **Frontend:** React (Vite), Axios, Tailwind/Custom CSS.
+* **AI:** Google Gemini Pro API.
+* **Security:** JWT, Bcrypt, HttpOnly Cookies.
 
-## Expanding the ESLint configuration
+## ⚙️ Installation & Setup
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+### 1. Backend Setup
+1. Navigate to the `backend` folder.
+2. Install dependencies:
+   ```bash
+   pip install fastapi uvicorn sqlalchemy passlib[bcrypt] pyjwt python-multipart python-dotenv
