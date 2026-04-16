@@ -23,7 +23,7 @@ const AuthPage = ({ onLoginSuccess }) => {
         formData.append('username', username);
         formData.append('password', password);
 
-        const response = await axios.post('http://127.0.0.1:8000/api/login', formData, {
+        const response = await axios.post('/api/login', formData, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
@@ -35,7 +35,7 @@ const AuthPage = ({ onLoginSuccess }) => {
 
       } else {
         
-        const response = await axios.post('http://127.0.0.1:8000/api/signup', {
+        const response = await axios.post('/api/signup', {
           username: username,
           password: password
         });

@@ -13,7 +13,7 @@ const AnalyticsDashboard = () => {
 
   const fetchHistory = async () => {
     try {
-      const response = await axios.get("http://127.0.0.1:8000/api/scan-history/");
+      const response = await axios.get('/api/scan-history/')
       if (Array.isArray(response.data)) {
         setHistory(response.data);
       }
