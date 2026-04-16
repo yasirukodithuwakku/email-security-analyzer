@@ -20,8 +20,9 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
     password_hash = Column(String)
-    
-    
+    failed_login_attempts = Column(Integer, default=0)
+    lockout_until = Column(DateTime, nullable=True)     
+    email = Column(String, unique=True, index=True)       
     scans = relationship("ScanRecord", back_populates="owner")
 
 class ScanRecord(Base):
