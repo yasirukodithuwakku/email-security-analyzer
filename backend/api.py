@@ -44,14 +44,16 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+frontend_urls_env = os.getenv("FRONTEND_URLS", "http://localhost:5173")
+allowed_origins = [url.strip() for url in frontend_urls_env.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, set this to your frontend URL
+    allow_origins=allowed_origins, 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # --- Gemini AI Setup ---
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)

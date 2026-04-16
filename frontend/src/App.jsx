@@ -13,6 +13,7 @@ import ExecutiveReport from './components/ExecutiveReport';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from './components/supabaseClient';
 
+
 axios.defaults.withCredentials = true;
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;
@@ -98,7 +99,7 @@ function App() {
     setResults(null)
 
     try {
-      const response = await axios.get(`http://127.0.0.1:8000/api/analyze/${domain}`)
+      const response = await axios.get(`/api/analyze/${domain}`)
       setResults(response.data)
     } catch (err) {
       if (err.response && err.response.status === 429) {
