@@ -1,38 +1,34 @@
-# 🛡️ Email Security Analyzer & SOC Dashboard
+# Email Security Analyzer 🛡️
 
-An Enterprise-Grade, Full-Stack Cybersecurity tool designed to analyze domains and URLs for email spoofing vulnerabilities, malicious activities, and phishing threats. It features an interactive Security Operations Center (SOC) dashboard and AI-driven auto-remediation.
+Advanced DNS vulnerability scanning tool with AI-powered auto-remediation. This project helps security professionals analyze domain security (SPF, DMARC, DKIM), detect phishing URLs, and perform network VAPT.
 
-## ✨ Key Features
+## 🚀 Key Features
+* **Single/Bulk Domain Scanner:** Detailed SPF, DMARC, and DKIM analysis.
+* **AI Auto-Remediation:** Actionable security recommendations using Gemini AI.
+* **Phishing URL Scanner:** Integration with Google Safe Browsing.
+* **Header Forensics:** Deep analysis of raw email headers and routing hops.
+* **Network VAPT:** Subdomain discovery and open port scanning.
+* **SOC Dashboard:** Real-time scan history and security alerts.
 
-* **🔍 Single & Bulk Domain Scanning:** Analyzes SPF and DMARC records to prevent email spoofing.
-* **🧠 AI Auto-Remediation:** Uses Google Gemini AI to provide instant, actionable fixes for misconfigured DNS records.
-* **🦠 Threat Intelligence Integration:** Checks domains against the VirusTotal API and URLs against Google Safe Browsing API.
-* **📊 SOC Analytics Dashboard:** Interactive data visualization of scan history and risk distribution using Recharts.
-* **🔐 Secure User Authentication:** JWT-based login/signup system with hashed passwords and SQLite database.
-* **🛑 Advanced Security:** Built-in API rate limiting and brute-force protection using SlowAPI.
+## 🔒 Security Architecture (Bank-Level Security)
+This project implements industry-standard security practices to protect user data:
 
-## 🛠️ Technology Stack
+1.  **HttpOnly JWT Authentication:** * Tokens are stored in **HttpOnly Cookies**, making them inaccessible to client-side JavaScript. This provides 100% protection against **XSS (Cross-Site Scripting)** attacks.
+    * Cookies are configured with `SameSite=Lax` to mitigate **CSRF** risks while maintaining usability.
+2.  **Password Hashing:** * Uses **Bcrypt** with `passlib` for robust password hashing. Plain-text passwords are never stored in the database.
+3.  **CORS Policy:** * Strict origin validation using environment variables to ensure only authorized frontend domains can interact with the API.
+4.  **Rate Limiting:** * Prevents brute-force and DoS attacks by limiting the number of requests per minute for sensitive endpoints.
 
-* **Frontend:** React.js, Vite, Recharts, Lucide Icons
-* **Backend:** Python, FastAPI, SQLAlchemy
-* **Database:** SQLite
-* **APIs & AI:** Google Gemini (Generative AI), VirusTotal API, Google Safe Browsing API
+## 🛠️ Tech Stack
+* **Backend:** FastAPI (Python), SQLAlchemy, PostgreSQL/SQLite.
+* **Frontend:** React (Vite), Axios, Tailwind/Custom CSS.
+* **AI:** Google Gemini Pro API.
+* **Security:** JWT, Bcrypt, HttpOnly Cookies.
 
-## 🚀 Getting Started
+## ⚙️ Installation & Setup
 
-Follow these steps to set up the project locally.
-
-### Prerequisites
-* Python 3.8+
-* Node.js & npm
-
-### 1. Backend Setup (FastAPI)
-Navigate to the root directory and install the required Python packages:
-
-```bash
-# Install dependencies
-pip install fastapi uvicorn requests dnspython python-dotenv pydantic sqlalchemy slowapi passlib[bcrypt] python-jose python-multipart google-generativeai
-
-
-# Run the backend server
-uvicorn api:app --reload
+### 1. Backend Setup
+1. Navigate to the `backend` folder.
+2. Install dependencies:
+   ```bash
+   pip install fastapi uvicorn sqlalchemy passlib[bcrypt] pyjwt python-multipart python-dotenv
