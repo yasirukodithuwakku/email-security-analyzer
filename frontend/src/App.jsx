@@ -13,7 +13,6 @@ import ExecutiveReport from './components/ExecutiveReport';
 import { Toaster, toast } from 'react-hot-toast';
 import { supabase } from './components/supabaseClient';
 
-
 axios.defaults.withCredentials = true;
 
 axios.defaults.baseURL = import.meta.env.VITE_API_BASE_URL;

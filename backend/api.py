@@ -118,12 +118,16 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
 class UserCreate(BaseModel):
     username: str
     password: str
+    email: str
 
 @app.post("/api/signup")
 async def signup(user: UserCreate, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already registered")
+
+    if db.query(User).filter(User.email == user.email).first():
+        raise HTTPException(status_code=400, detail="Email already registered")
     
     if len(user.password) < 8 or not any(char.isdigit() for char in user.password) or not any(char.isupper() for char in user.password):
         raise HTTPException(

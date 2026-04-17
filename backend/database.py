@@ -33,8 +33,7 @@ class ScanRecord(Base):
     scan_type = Column(String)
     risk_status = Column(String)
     timestamp = Column(DateTime, default=lambda: datetime.now(timezone.utc))
-    
-    
+     
     user_id = Column(Integer, ForeignKey("users.id"))
     owner = relationship("User", back_populates="scans")
 

@@ -9,6 +9,7 @@ const AuthPage = ({ onLoginSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [email, setEmail] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,12 +38,14 @@ const AuthPage = ({ onLoginSuccess }) => {
         
         const response = await axios.post('/api/signup', {
           username: username,
+          email: email, 
           password: password
         });
         
         setSuccess("Account created successfully! Please log in.");
         setIsLogin(true); 
         setPassword('');
+        setEmail('');
       }
     } catch (err) {
       if (err.response && err.response.data && err.response.data.detail) {
@@ -85,6 +88,13 @@ const AuthPage = ({ onLoginSuccess }) => {
             onChange={(e) => setPassword(e.target.value)}
             required
             style={{ padding: '12px', borderRadius: '8px', border: '1px solid #334155', backgroundColor: '#1e293b', color: 'white', fontSize: '1rem' }}
+          />
+          <input 
+            type="email" 
+            placeholder="Enter your email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
           />
           <button type="submit" disabled={loading} style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#3b82f6', color: 'white', fontSize: '1rem', fontWeight: 'bold', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '10px' }}>
             {loading ? <Loader className="spin" size={20} /> : (isLogin ? <LogIn size={20} /> : <UserPlus size={20} />)}
