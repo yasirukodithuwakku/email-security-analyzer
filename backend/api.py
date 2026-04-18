@@ -7,6 +7,9 @@ import google.generativeai as genai
 import email
 import re
 import socket 
+import smtplib 
+from email.mime.text import MIMEText 
+from email.mime.multipart import MIMEMultipart 
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from fastapi import FastAPI, File, UploadFile, Request, Depends, HTTPException, status, Response
@@ -29,6 +32,8 @@ load_dotenv()
 VT_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 SAFE_BROWSING_API_KEY = os.getenv("SAFE_BROWSING_API_KEY")
+SENDER_EMAIL = os.getenv("SENDER_EMAIL") # <-- අලුතින් දැම්මා
+SENDER_PASSWORD = os.getenv("SENDER_PASSWORD") # <-- අලුතින් දැම්මා
 
 # --- Security Config ---
 SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-key-change-this-in-production")
@@ -54,6 +59,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 # --- Gemini AI Setup ---
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
@@ -83,6 +89,40 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
+
+def create_reset_token(email: str):
+    expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+    to_encode = {"sub": email, "exp": expire, "type": "reset"}
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def send_reset_email(receiver_email: str, token: str):
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
+    
+    if not SENDER_EMAIL or not SENDER_PASSWORD:
+        print("\n" + "="*50)
+        print("⚠️ Email credentials not set in .env!")
+        print(f"🔗 Password Reset Link: {reset_link}")
+        print("="*50 + "\n")
+        return
+
+    msg = MIMEMultipart()
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = receiver_email
+    msg['Subject'] = "Password Reset - Email Security Analyzer"
+    
+    body = f"Click the link below to reset your password. This link will expire in 15 minutes.\n\n{reset_link}"
+    msg.attach(MIMEText(body, 'plain'))
+    
+    try:
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.send_message(msg)
+        server.quit()
+    except Exception as e:
+        print(f"Failed to send email: {e}")
+
 # --- Dependency to get user from HttpOnly Cookie ---
 async def get_current_user(request: Request, db: Session = Depends(get_db)):
     credentials_exception = HTTPException(
@@ -90,12 +130,10 @@ async def get_current_user(request: Request, db: Session = Depends(get_db)):
         detail="Could not validate credentials",
     )
     
-    # Extract token from cookies instead of headers
     token = request.cookies.get("access_token")
     if not token:
         raise credentials_exception
         
-    # Remove 'Bearer ' prefix
     if token.startswith("Bearer "):
         token = token.split(" ")[1]
 
@@ -136,11 +174,10 @@ async def signup(user: UserCreate, db: Session = Depends(get_db)):
         )
 
     hashed_password = get_password_hash(user.password)
-    new_user = User(username=user.username, password_hash=hashed_password)
+    new_user = User(username=user.username, email=user.email, password_hash=hashed_password)
     db.add(new_user)
     db.commit()
     return {"status": "Success", "message": "User account created successfully!"}
-
 
 
 @app.post("/api/login")
@@ -158,12 +195,9 @@ async def login(request: Request, response: Response, form_data: OAuth2PasswordR
             detail=f"Account locked due to multiple failed attempts. Try again in {time_left} minutes."
         )
 
-   
     if not verify_password(form_data.password, user.password_hash):
-
         user.failed_login_attempts += 1
         
-    
         if user.failed_login_attempts >= 5:
             user.lockout_until = datetime.now(timezone.utc) + timedelta(minutes=15)
             db.commit()
@@ -172,7 +206,6 @@ async def login(request: Request, response: Response, form_data: OAuth2PasswordR
         db.commit()
         raise HTTPException(status_code=401, detail="Invalid username or password")
 
-  
     user.failed_login_attempts = 0
     user.lockout_until = None
     db.commit()
@@ -195,6 +228,52 @@ async def login(request: Request, response: Response, form_data: OAuth2PasswordR
 async def logout(response: Response):
     response.delete_cookie("access_token")
     return {"message": "Logout successful"}
+
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+@app.post("/api/forgot-password")
+@limiter.limit("3/minute")
+async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == data.email).first()
+    if user:
+        token = create_reset_token(user.email)
+        send_reset_email(user.email, token)
+    return {"message": "If an account with that email exists, a password reset link has been sent."}
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str
+
+@app.post("/api/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(request: Request, data: ResetPasswordRequest, db: Session = Depends(get_db)):
+    try:
+        payload = jwt.decode(data.token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "reset":
+            raise HTTPException(status_code=400, detail="Invalid token type.")
+        email: str = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token. Please request a new link.")
+
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+        
+    if len(data.new_password) < 8 or not any(char.isdigit() for char in data.new_password) or not any(char.isupper() for char in data.new_password):
+        raise HTTPException(
+            status_code=400, 
+            detail="Weak Password! Must be at least 8 characters, contain 1 uppercase letter and 1 number."
+        )
+
+    user.password_hash = get_password_hash(data.new_password)
+    user.failed_login_attempts = 0
+    user.lockout_until = None 
+    
+    db.commit()
+    return {"message": "Password has been reset successfully. You can now login with your new password."}
 
 
 # --- ANALYZER FUNCTIONS ---
