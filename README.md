@@ -1,38 +1,49 @@
-# 🛡️ Email Security Analyzer & SOC Dashboard
+# Email Security Analyzer & SOC Dashboard 🛡️
 
-An Enterprise-Grade, Full-Stack Cybersecurity tool designed to analyze domains and URLs for email spoofing vulnerabilities, malicious activities, and phishing threats. It features an interactive Security Operations Center (SOC) dashboard and AI-driven auto-remediation.
+An advanced, enterprise-grade DNS vulnerability scanning and network VAPT tool. This platform helps cybersecurity professionals analyze domain security (SPF, DMARC, DKIM), detect phishing threats, perform network reconnaissance, and receive AI-powered remediation strategies.
 
-## ✨ Key Features
+## 🚀 Key Features
 
-* **🔍 Single & Bulk Domain Scanning:** Analyzes SPF and DMARC records to prevent email spoofing.
-* **🧠 AI Auto-Remediation:** Uses Google Gemini AI to provide instant, actionable fixes for misconfigured DNS records.
-* **🦠 Threat Intelligence Integration:** Checks domains against the VirusTotal API and URLs against Google Safe Browsing API.
-* **📊 SOC Analytics Dashboard:** Interactive data visualization of scan history and risk distribution using Recharts.
-* **🔐 Secure User Authentication:** JWT-based login/signup system with hashed passwords and SQLite database.
-* **🛑 Advanced Security:** Built-in API rate limiting and brute-force protection using SlowAPI.
+### 🔍 Security Analysis Tools
+* **Single & Bulk Domain Scanner:** Deep analysis of SPF, DMARC, and DKIM records.
+* **Phishing URL Scanner:** Integration with Google Safe Browsing API to detect malicious links.
+* **Threat Intelligence:** Real-time domain reputation checking via VirusTotal API.
+* **Email Header Forensics:** Deep parsing of raw email headers to trace routing hops and IP addresses.
+* **Network VAPT:** Subdomain discovery (via crt.sh) and automated open port scanning.
 
-## 🛠️ Technology Stack
+### 🧠 AI Integration
+* **AI Auto-Remediation:** Leverages Google Gemini AI to generate actionable, context-aware security recommendations based on scan results.
 
-* **Frontend:** React.js, Vite, Recharts, Lucide Icons
-* **Backend:** Python, FastAPI, SQLAlchemy
-* **Database:** SQLite
-* **APIs & AI:** Google Gemini (Generative AI), VirusTotal API, Google Safe Browsing API
+### 🔒 Enterprise-Level Security & Authentication
+* **JWT & HttpOnly Cookies:** Tokens are securely stored in HttpOnly, SameSite=Lax cookies to prevent XSS and CSRF attacks.
+* **Bcrypt Hashing:** Passwords are fully hashed before database storage.
+* **Brute-Force Protection:** Automated account lockout system after 5 failed login attempts.
+* **Secure Password Reset:** JWT-based email reset links with expiration handling.
+* **Rate Limiting:** API endpoints are protected against DoS attacks using `slowapi`.
 
-## 🚀 Getting Started
+### 📊 SOC Operations
+* **Real-time Dashboard:** Live tracking of scan histories with automated risk categorization (Secure, Warning, Critical).
+* **Executive PDF Reports:** Generate downloadable, formatted reports of scan results for management.
 
-Follow these steps to set up the project locally.
+---
+
+## 🛠️ Tech Stack
+
+* **Frontend:** React (Vite), Axios, Tailwind/Custom CSS, Lucide Icons, html2pdf.
+* **Backend:** FastAPI (Python), SQLAlchemy, JWT, Passlib, Uvicorn.
+* **Database:** PostgreSQL (Supabase).
+* **External APIs:** Google Gemini AI, VirusTotal API, Google Safe Browsing API.
+
+---
+
+## ⚙️ Installation & Setup
 
 ### Prerequisites
-* Python 3.8+
+* Python 3.10+
 * Node.js & npm
+* PostgreSQL Database (or Supabase account)
 
-### 1. Backend Setup (FastAPI)
-Navigate to the root directory and install the required Python packages:
-
+### 1. Clone the Repository
 ```bash
-# Install dependencies
-pip install fastapi uvicorn requests dnspython python-dotenv pydantic sqlalchemy slowapi passlib[bcrypt] python-jose python-multipart google-generativeai
-
-
-# Run the backend server
-uvicorn api:app --reload
+git clone [https://github.com/yourusername/email-security-analyzer.git](https://github.com/yourusername/email-security-analyzer.git)
+cd email-security-analyzer
