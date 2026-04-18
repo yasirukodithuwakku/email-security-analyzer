@@ -237,10 +237,14 @@ class ForgotPasswordRequest(BaseModel):
 @app.post("/api/forgot-password")
 @limiter.limit("3/minute")
 async def forgot_password(request: Request, data: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    print(f"\n--- DEBUG: Searching for email -> {data.email} ---") # Debug print
     user = db.query(User).filter(User.email == data.email).first()
     if user:
+        print("--- DEBUG: User found! Sending email... ---") # Debug print
         token = create_reset_token(user.email)
         send_reset_email(user.email, token)
+    else:
+        print("--- DEBUG: Error! This email is not in the Database ---") # Debug print
     return {"message": "If an account with that email exists, a password reset link has been sent."}
 
 class ResetPasswordRequest(BaseModel):
